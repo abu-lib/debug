@@ -6,7 +6,7 @@ jobs:
   build-and-test-ubuntu:
     strategy:
       matrix:
-        compiler: [g++-10, clang++-12]
+        compiler: [g++-10]
         build_type: [Debug, Release]
 
     runs-on: ubuntu-20.04 
@@ -29,7 +29,7 @@ jobs:
   build-and-test-macos:
     strategy:
       matrix:
-        compiler: [clang++, g++-10, g++-11]
+        compiler: [g++-10, g++-11]
         build_type: [Debug, Release]
 
     runs-on: macos-10.15
@@ -52,7 +52,7 @@ jobs:
   build-and-test-windows:
     strategy:
       matrix:
-        toolset: [ClangCL, host=x64, host=x86]
+        toolset: [host=x64, host=x86]
         arch: [Win32, x64]
         build_type: [Debug, Release]
 

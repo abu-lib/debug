@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(abu_debug VERSION 1.0.0)
+project(abu_debug VERSION 0.1.0)
 
 include(.abu/build-utils/abu_lib.cmake)
 
@@ -8,7 +8,7 @@ add_library(abu_debug
 )
 add_library(abu::debug ALIAS abu_debug)
 target_include_directories(abu_debug PUBLIC include)
-target_compile_features(abu_debug PUBLIC cxx_std_17)
+target_compile_features(abu_debug PUBLIC cxx_std_20)
 
 abu_announce(debug)
 

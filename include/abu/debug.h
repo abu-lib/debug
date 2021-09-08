@@ -15,50 +15,64 @@
 #ifndef ABU_DEBUG_H_INCLUDED
 #define ABU_DEBUG_H_INCLUDED
 
-#include <cstdlib>
+#include <source_location>
 
-#ifndef ABU_ENABLE_CHECKS
-#if !defined(NDEBUG)
-#define ABU_ENABLE_CHECKS 1
-#else
-#define ABU_ENABLE_CHECKS 0
-#endif
-#endif
+#include "abu/debug/config.h"
+#include "abu/debug/details/abu_lib_config.h"
 
-namespace abu::dbg::details_ {
-[[noreturn]] void handle_assert_failure(const char* msg,
-                                        const char* file,
-                                        int line) noexcept;
-}  // namespace abu::dbg::details_
+namespace abu::debug {
+namespace details_ {
+[[noreturn]] void handle_failed_check(const char*,
+                                      const std::source_location&) noexcept;
+}
 
-// ***** unreachable() *****
-#if ABU_ENABLE_CHECKS
-#define abu_unreachable()                    \
-  abu::dbg::details_::handle_assert_failure( \
-      "Executed unreachable code", __FILE__, __LINE__)
-#else
-
+// *****
+constexpr void unreacheable() {
 #if defined(__GNUC__)
 #define abu_unreachable __builtin_unreachable
 #elif defined(_MSC_VER)
 #define abu_unreachable() __assume(false)
-#else
-#define abu_unreachable() (void)
 #endif
+}
 
-#endif
+// *****
+template <config Cfg>
+constexpr void assume(bool condition,
+                      const std::source_location location =
+                          std::source_location::current()) noexcept {
+  if constexpr (Cfg.check_assumptions) {
+    if (!condition) {
+      details_::handle_failed_check(
+          "Assumption failed. This is a bug in the library.", location);
+    }
+  } else {
+    if (!condition) {
+      unreacheable();
+    }
+  }
+}
 
-// ***** abu_assume() *****
-#if ABU_ENABLE_CHECKS
-#define abu_assume(condition) \
-  if (!(condition))           \
-  abu::dbg::details_::handle_assert_failure(#condition, __FILE__, __LINE__)
-#else
-#define abu_assume(condition) \
-  if (!(condition)) abu_unreachable()
-#endif  // ABU_ENABLE_CHECKS
+// *****
+template <config Cfg>
+constexpr void precondition(bool condition,
+                            const std::source_location location =
+                                std::source_location::current()) noexcept {
+  if constexpr (Cfg.check_preconditions) {
+    if (!condition) {
+      details_::handle_failed_check(
+          "Precondition failed. Library not being used as expected.", location);
+    }
+  } else {
+    if (!condition) {
+      unreacheable();
+    }
+  }
+}
 
-#define abu_precondition(condition) abu_assume(condition)
-#define abu_postcondition(condition) abu_assume(condition)
+#define abu_assume(condition) ::abu::debug::assume<details_::dbg_cfg>(condition)
+
+#define abu_precondition(condition) \
+  ::abu::debug::precondition<details_::dbg_cfg>(condition)
+}  // namespace abu::debug
 
 #endif

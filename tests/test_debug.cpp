@@ -15,56 +15,38 @@
 #include "abu/debug.h"
 #include "gtest/gtest.h"
 
-TEST(common, basic_api_test) {
+using namespace abu;
+
+constexpr debug::config validated = {
+    .check_assumptions = true,
+    .check_preconditions = false,
+};
+
+constexpr debug::config check_precond = {
+    .check_assumptions = false,
+    .check_preconditions = true,
+};
+
+TEST(debug, preconditions) {
+  debug::precondition<validated>(true);
+  debug::precondition<check_precond>(true);
+
+  EXPECT_DEATH(debug::precondition<check_precond>(false), "");
+  // Invoking debug::precondition<validated>(false) is UB
+}
+
+TEST(debug, validation) {
+  debug::assume<validated>(true);
+  debug::assume<check_precond>(true);
+
+  EXPECT_DEATH(debug::assume<validated>(false), "");
+  // Invoking debug::assume<validated>(false) is UB
+}
+
+
+namespace abu::debug {
+TEST(debug, shorthand_api) {
   abu_assume(true);
   abu_precondition(true);
-  abu_postcondition(true);
 }
-
-TEST(common, code_in_assumption_is_always_executed_once) {
-  int count = 0;
-  auto foo = [&]() {
-    ++count;
-    return true;
-  };
-
-  abu_assume(foo());
-  EXPECT_EQ(count, 1);
-
-  abu_precondition(foo());
-  EXPECT_EQ(count, 2);
-
-  abu_postcondition(foo());
-  EXPECT_EQ(count, 3);
 }
-
-namespace {
-bool unreachable_if_under_5(int v) {
-  if (v > 4) {
-    return true;
-  }
-  // This is not supposed to cause any warning despite being an unreturning
-  // branch.
-  abu_unreachable();
-}
-}  // namespace
-
-TEST(common, reacheable_branches) {
-  EXPECT_TRUE(unreachable_if_under_5(5));
-}
-
-TEST(common, can_assume_func_calls_with_commas) {
-  auto foo = [](int, bool b) { return b; };
-  abu_assume(foo(12, 1 > 0));
-}
-
-#ifndef NDEBUG
-TEST(debug, failed_assumptions_are_fatal) {
-  int x = 1;
-  EXPECT_DEATH(abu_assume(x < 0), "");
-}
-
-TEST(debug, reaching_unreachable_code_is_fatal) {
-  EXPECT_DEATH(unreachable_if_under_5(0), "");
-}
-#endif

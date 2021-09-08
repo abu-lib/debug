@@ -17,11 +17,11 @@
 
 #include "abu/debug.h"
 
-namespace abu::dbg::details_ {
-void handle_assert_failure(const char* msg,
-                           const char* file,
-                           int line) noexcept {
-  std::cerr << file << ":" << line << " " << msg << std::endl;
+namespace abu::debug::details_ {
+void handle_failed_check(const char* msg,
+                         const std::source_location& loc) noexcept {
+  std::cerr << loc.file_name() << ":" << loc.line() << ":" << loc.column()
+            << ": " << loc.function_name() << " Check failure:" << msg << '\n';
   std::abort();
 }
-}  // namespace abu::dbg::details_
+}  // namespace abu::debug::details_

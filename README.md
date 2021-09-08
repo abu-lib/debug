@@ -6,73 +6,47 @@ This is part of the [Abu](http://github.com/abu-lib/abu) meta-project.
 
 This contains utilities to ensure program correctness.
 
-## Enabling Checks
+## Differences with assert()
 
-If the `ABU_ENABLE_CHECKS` macro is set to `1`, then aggressive verification
-will be enabled, at the cost of performance. If unspecified, it will be set if
-`NDEBUG` is not set.
+- Code is not stripped out of the executable unless explicitely stated.
+- Disabled checks become compiler hints.
 
-## Quick reference
+## Usage - general
 
-### `abu::dbg::unreachable` 
+**N.B.** For usage within other abu libaries, see below.
 
-Flags a portion of code as being unreachable. Most compilers will optimize 
-accordingly.
+```cpp
+// Set up a configuration
+constexpr abu::dgb::config some_config = {
+#ifdef NDEBUG
+    .check_assumptions = false;
+    .check_preconditions = true;
+#else
+    .check_assumptions = true;
+    .check_preconditions = true;
+#endif
+};
 
-Example:
-```
-void foo(int val) {
-    switch(val) {
-    case 0: break;
-    case 5: break;
-    // ...
-    default:
-        abu::bdg::unreachable();
+void some_function(int x, int y) {
+    // Validate that the conditions for a function being called are met
+    abu::dbg::precondition<some_config>(some_value > 5 && some_value < 12);
+    abu::dbg::precondition<some_config>(current_program_state == program_state::sane);
+    if constexpr(some_config.check_preconditions) {
+        abu::dbg::precondition<some_config>(external_test(y));
     }
+    int z = x * y;
+
+    // Check internal assumptions
+    abu::dbg::assume(z > x);
 }
 ```
 
-### `abu_assume`
+## Usage - Abu libraries
 
-In debug builds, the expression will be asserted to be true. In release builds, 
-informs the compiler of the expectation.
+`abu::<library>::details_::lib_config` is handled automatically by the build scripts
 
-The code in the assumption is still always executed regardless of the build type.
+`abu_assume(condition)` and `abu_precondition(condition)` macros are 
+systematically available.
 
-Example:
-```
-void to_float_from_string(std::variant<int, float, std::string>& val) {
-    abu_assume(val.index() == 0);
-    val = 12.3f;
-}
-```
-
-### `abu_precondition`
-
-Effectively identical to `abu_assume()`, but indicates that the the onus is on 
-the caller, and should be documented.
-
-Example:
-```
-// Calling foo() with a null pointer is undefined behavior
-void foo(int * some_ptr) {
-    abu_precondition(some_ptr);
-}
-```
-
-### `abu_postcondition`
-
-Effectively identical to `abu_assume()`, but indicates that callers are allowed 
-to assume it to be true, and thus should be documented.
-
-Example:
-```
-// Will always return values above 100.
-int foo(int val) {
-    int result = ...;
-
-
-    abu_precondition(result > 100);
-    return result;
-}
-```
+- They assume that they are being called from within the `abu::<lib_name>` namespace.
+- They assume that "abu/<lib_name>/details/abu_lib_config.h" has been included
