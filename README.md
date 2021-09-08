@@ -1,6 +1,6 @@
 # Abu Debug
 
-[![CI](https://github.com/FrancoisChabot/abu-debug/actions/workflows/ci.yml/badge.svg)](https://github.com/FrancoisChabot/abu-debug/actions/workflows/ci.yml)
+[![CI](https://github.com/abu-lib/debug/actions/workflows/ci.yml/badge.svg)](https://github.com/abu-lib/debug/actions/workflows/ci.yml)
 
 This is part of the [Abu](http://github.com/abu-lib/abu) meta-project.
 
