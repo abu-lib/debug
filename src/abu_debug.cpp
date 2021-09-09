@@ -18,10 +18,13 @@
 #include "abu/debug.h"
 
 namespace abu::debug::details_ {
-void handle_failed_check(const char* msg,
-                         const std::source_location& loc) noexcept {
-  std::cerr << loc.file_name() << ":" << loc.line() << ":" << loc.column()
-            << ": " << loc.function_name() << ": " << msg << '\n';
+[[noreturn]] void handle_failed_check(std::string_view msg,
+                                      std::uint_least32_t line,
+                                      std::uint_least32_t column,
+                                      const char* file_name,
+                                      const char* function_name) noexcept {
+  std::cerr << file_name << ":" << line << ":" << column << ": "
+            << function_name << ": " << msg << '\n';
   std::abort();
 }
 }  // namespace abu::debug::details_

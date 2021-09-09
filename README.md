@@ -10,50 +10,92 @@ This contains utilities to ensure program correctness.
 
 - Code is not stripped out of the executable unless explicitely stated.
 - Disabled checks become compiler hints.
-- More granular control over what gets compiled out.
+- More granular control over what gets checked.
 - Checks are always performed in manifestly constexpr contexts.
 
-## Usage - general
-
-The library defines two types of tests: 
-- Assumptions, which relates to expectations within the inner workings of the code.
-- Preconditions, which relates to conditions that must be met for a public interface to be usable.
-
-both the  and `assumption<>` and `precondition<>`
-**N.B.** For usage within other abu libaries, see below.
+## Usage
+There are two types of checks: 
+- **Assumptions**: expectations within the inner workings of the code.
+- **Preconditions**: conditions that must be met for a public interface to be usable.
 
 ```cpp
-// Set up a configuration
-constexpr abu::dgb::config some_config = {
-#ifdef NDEBUG
-    .check_assumptions = false;
-    .check_preconditions = true;
-#else
-    .check_assumptions = true;
-    .check_preconditions = true;
-#endif
-};
+namespace abu::debug {
+  struct config {
+    bool check_assumptions;
+    bool check_preconditions;
+  };
 
-void some_function(int x, int y) {
-    // Validate that the conditions for a function being called are met
-    abu::dbg::precondition<some_config>(some_value > 5 && some_value < 12);
-    abu::dbg::precondition<some_config>(current_program_state == program_state::sane);
-    if constexpr(some_config.check_preconditions) {
-        abu::dbg::precondition<some_config>(external_test(y));
-    }
-    int z = x * y;
+  template<config Cfg>
+  constexpr void assume(bool condition, std::string_view msg={}) noexcept;
 
-    // Check internal assumptions
-    abu::dbg::assume(z > x);
+  template<config Cfg>
+  constexpr void precondition(bool condition, std::string_view msg={}) noexcept;
+
+  [[noreturn]] constexpr void unreachable() noexcept;
 }
 ```
 
-## Usage - Abu libraries
+Here's a typical complete real-world setup:
+```cpp
+// my_code/debug.h
+#ifndef MY_CODE_CHECKS_ASSUMPTIONS
+  #ifdef NDEBUG
+    #define MY_CODE_CHECKS_ASSUMPTIONS true
+  #else
+    #define MY_CODE_CHECKS_ASSUMPTIONS false
+  #endif
+#endif
 
-`abu::<library>::details_::lib_config` is handled automatically by the build scripts
+#ifndef MY_CODE_CHECKS_PRECONDITIONS
+  #define MY_CODE_CHECKS_PRECONDITIONS true
+#endif
 
-`abu_assume(condition)` and `abu_precondition(condition)` macros are 
-systematically available.
+#include "abu/debug.h"
 
-- They assume that they are being called from within the `abu::<lib_name>` namespace.
-- They assume that "abu/<lib_name>/details/abu_lib_config.h" has been included
+namespace my_code {
+constexpr abu::debug::config debug_cfg = {
+  .check_assumptions = MY_CODE_CHECKS_ASSUMPTIONS;
+  .check_preconditions = MY_CODE_CHECKS_PRECONDITIONS;
+};
+
+inline constexpr void assume(bool condition, 
+                             std::string_view msg={}) noexcept {
+  return abu::debug::assume<debug_cfg>(condition, msg);
+} 
+
+inline constexpr void precondition(bool condition, 
+                                   std::string_view msg={}) noexcept {
+  return abu::debug::precondition<debug_cfg>(condition, msg);
+} 
+}
+```
+```cpp
+// my_code/source.cpp
+#include <string>
+#include <variant>
+
+#include "my_code/debug.h"
+
+namespace my_code {
+void int_to_float(std::variant<std::string, int, float>& v) {
+    precondition(v.index() == 1);
+
+    v = 12.5f;
+    assume(v.index() == 2);
+}
+}
+```
+
+## FAQ
+
+> How do I write tests for checks?
+
+For runtime tests, a death test like GoogleTest's `EXPECT_DEATH()` is the way to go.
+
+## Kludges
+
+`abu::debug` has the following kludges:
+
+- `<source_location>` Is not supported on clang as of version 12. A workaround is in place
+- Optimal behavior for `unreachable()` is compiler-specific.
+  - MSVC needs a `__force_inline` in order to behave well.

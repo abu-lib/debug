@@ -27,38 +27,46 @@ constexpr debug::config check_precond = {
     .check_preconditions = true,
 };
 
-constexpr int foo(int x) {
+constexpr void foo(int x) {
   debug::precondition<check_precond>(x < 10);
-  return x * x;
 }
 
-template <int V>
-concept PreconditionTester = requires {
-  typename std::integral_constant<int, foo(V)>;
+template <auto Func, auto... Args>
+constexpr int wrapper() {
+  (void)Func(Args...);
+  return 0;
+}
+
+template <auto Func, auto... Args>
+concept FailsConstexpr = requires {
+  typename std::integral_constant<int, wrapper<Func, Args...>()>;
 };
 
-static_assert(PreconditionTester<5>);
-static_assert(!PreconditionTester<12>);
+static_assert(FailsConstexpr<foo, 5>);
+static_assert(!FailsConstexpr<foo, 12>);
 
 TEST(debug, preconditions) {
   debug::precondition<validated>(true);
-  debug::precondition<check_precond>(true);
+  debug::precondition<validated>(true, "With a message");
 
-  EXPECT_DEATH(debug::precondition<check_precond>(false), "");
+  debug::precondition<check_precond>(true);
+  debug::precondition<check_precond>(true, "With a message");
+
+  EXPECT_DEATH(debug::precondition<check_precond>(false), "Precondition");
+  EXPECT_DEATH(debug::precondition<check_precond>(false, "With a message"),
+               "With a message");
   // Invoking debug::precondition<validated>(false) is UB
 }
 
 TEST(debug, validation) {
   debug::assume<validated>(true);
-  debug::assume<check_precond>(true);
+  debug::assume<validated>(true, "With a message");
 
-  EXPECT_DEATH(debug::assume<validated>(false), "");
+  debug::assume<check_precond>(true);
+  debug::assume<check_precond>(true, "With a message");
+
+  EXPECT_DEATH(debug::assume<validated>(false), "Assumption");
+  EXPECT_DEATH(debug::precondition<check_precond>(false, "With a message"),
+               "With a message");
   // Invoking debug::assume<validated>(false) is UB
 }
-
-namespace abu::debug {
-TEST(debug, shorthand_api) {
-  abu_assume(true);
-  abu_precondition(true);
-}
-}  // namespace abu::debug
