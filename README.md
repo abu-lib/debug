@@ -10,9 +10,16 @@ This contains utilities to ensure program correctness.
 
 - Code is not stripped out of the executable unless explicitely stated.
 - Disabled checks become compiler hints.
+- More granular control over what gets compiled out.
+- Checks are always performed in manifestly constexpr contexts.
 
 ## Usage - general
 
+The library defines two types of tests: 
+- Assumptions, which relates to expectations within the inner workings of the code.
+- Preconditions, which relates to conditions that must be met for a public interface to be usable.
+
+both the  and `assumption<>` and `precondition<>`
 **N.B.** For usage within other abu libaries, see below.
 
 ```cpp

@@ -27,6 +27,19 @@ constexpr debug::config check_precond = {
     .check_preconditions = true,
 };
 
+constexpr int foo(int x) {
+  debug::precondition<check_precond>(x < 10);
+  return x * x;
+}
+
+template <int V>
+concept PreconditionTester = requires {
+  typename std::integral_constant<int, foo(V)>;
+};
+
+static_assert(PreconditionTester<5>);
+static_assert(!PreconditionTester<12>);
+
 TEST(debug, preconditions) {
   debug::precondition<validated>(true);
   debug::precondition<check_precond>(true);
@@ -43,10 +56,9 @@ TEST(debug, validation) {
   // Invoking debug::assume<validated>(false) is UB
 }
 
-
 namespace abu::debug {
 TEST(debug, shorthand_api) {
   abu_assume(true);
   abu_precondition(true);
 }
-}
+}  // namespace abu::debug

@@ -21,7 +21,7 @@ namespace abu::debug::details_ {
 void handle_failed_check(const char* msg,
                          const std::source_location& loc) noexcept {
   std::cerr << loc.file_name() << ":" << loc.line() << ":" << loc.column()
-            << ": " << loc.function_name() << " Check failure:" << msg << '\n';
+            << ": " << loc.function_name() << ": " << msg << '\n';
   std::abort();
 }
 }  // namespace abu::debug::details_

@@ -16,6 +16,7 @@
 #define ABU_DEBUG_H_INCLUDED
 
 #include <source_location>
+#include <type_traits>
 
 #include "abu/debug/config.h"
 #include "abu/debug/details/abu_lib_config.h"
@@ -24,14 +25,17 @@ namespace abu::debug {
 namespace details_ {
 [[noreturn]] void handle_failed_check(const char*,
                                       const std::source_location&) noexcept;
-}
+
+inline void precondition_failed() {}
+inline void assumption_failed() {}
+}  // namespace details_
 
 // *****
-constexpr void unreacheable() {
+[[noreturn]] constexpr void unreacheable() {
 #if defined(__GNUC__)
-#define abu_unreachable __builtin_unreachable
+  __builtin_unreachable();
 #elif defined(_MSC_VER)
-#define abu_unreachable() __assume(false)
+  __assume(false);
 #endif
 }
 
@@ -40,14 +44,20 @@ template <config Cfg>
 constexpr void assume(bool condition,
                       const std::source_location location =
                           std::source_location::current()) noexcept {
-  if constexpr (Cfg.check_assumptions) {
+  if (std::is_constant_evaluated()) {
     if (!condition) {
-      details_::handle_failed_check(
-          "Assumption failed. This is a bug in the library.", location);
+      details_::assumption_failed();
     }
   } else {
-    if (!condition) {
-      unreacheable();
+    if constexpr (Cfg.check_assumptions) {
+      if (!condition) {
+        details_::handle_failed_check(
+            "Assumption failed. This is a bug in the library.", location);
+      }
+    } else {
+      if (!condition) {
+        unreacheable();
+      }
     }
   }
 }
@@ -57,14 +67,21 @@ template <config Cfg>
 constexpr void precondition(bool condition,
                             const std::source_location location =
                                 std::source_location::current()) noexcept {
-  if constexpr (Cfg.check_preconditions) {
+  if (std::is_constant_evaluated()) {
     if (!condition) {
-      details_::handle_failed_check(
-          "Precondition failed. Library not being used as expected.", location);
+      details_::precondition_failed();
     }
   } else {
-    if (!condition) {
-      unreacheable();
+    if constexpr (Cfg.check_preconditions) {
+      if (!condition) {
+        details_::handle_failed_check(
+            "Precondition failed. Library not being used as expected.",
+            location);
+      }
+    } else {
+      if (!condition) {
+        unreacheable();
+      }
     }
   }
 }
