@@ -30,30 +30,41 @@ struct config {
 };
 
 #ifdef __cpp_lib_source_location
-// Check that code s behaving as expected.
-template <config Cfg>
-constexpr void assume(bool condition,
-                      std::string_view msg = "Assumption Failure",
-                      const std::source_location location =
-                          std::source_location::current()) noexcept;
-
-// Check that external criteria for code to be valid are met.
-template <config Cfg>
-constexpr void precondition(bool condition,
-                            std::string_view msg = "Precondition Failure",
-                            const std::source_location location =
-                                std::source_location::current()) noexcept;
+using source_location = std::source_location;
 #else
+struct source_location {
+  constexpr std::uint_least32_t line() const noexcept {
+    return 0;
+  }
+  constexpr std::uint_least32_t column() const noexcept {
+    return 0;
+  };
+  constexpr const char* file_name() const noexcept {
+    return "";
+  }
+  constexpr const char* function_name() const noexcept {
+    return "";
+  }
+
+  static constexpr source_location current() noexcept {
+    return {};
+  }
+};
+#endif
+
 // Check that code s behaving as expected.
 template <config Cfg>
-constexpr void assume(bool condition,
-                      std::string_view msg = "Assumption Failure") noexcept;
+constexpr void assume(
+    bool condition,
+    std::string_view msg = "Assumption Failure",
+    const source_location location = source_location::current()) noexcept;
 
 // Check that external criteria for code to be valid are met.
 template <config Cfg>
 constexpr void precondition(
-    bool condition, std::string_view msg = "Precondition Failure") noexcept;
-#endif
+    bool condition,
+    std::string_view msg = "Precondition Failure",
+    const source_location location = source_location::current()) noexcept;
 
 // Indicates that code cannot be reached.
 #ifdef _MSC_VER

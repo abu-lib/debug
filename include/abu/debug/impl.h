@@ -32,21 +32,6 @@ namespace details_ {
 inline void assumption_failed_error() {}
 inline void precondition_failed_error() {}
 
-struct fake_source_location {
-  constexpr std::uint_least32_t line() const noexcept {
-    return 0;
-  }
-  constexpr std::uint_least32_t column() const noexcept {
-    return 0;
-  };
-  constexpr const char* file_name() const noexcept {
-    return "";
-  }
-  constexpr const char* function_name() const noexcept {
-    return "";
-  }
-};
-
 }  // namespace details_
 
 // ********** unreachable() **********
@@ -64,17 +49,10 @@ struct fake_source_location {
 #endif
 
 // ********** assume() **********
-#ifdef __cpp_lib_source_location
 template <config Cfg>
 constexpr void assume(bool condition,
                       std::string_view msg,
-                      const std::source_location location) noexcept {
-#else
-template <config Cfg>
-constexpr void assume(bool condition, std::string_view msg) noexcept {
-  details_::fake_source_location location;
-#endif
-
+                      const source_location location) noexcept {
   if (std::is_constant_evaluated()) {
     if (!condition) {
       details_::assumption_failed_error();
@@ -97,16 +75,10 @@ constexpr void assume(bool condition, std::string_view msg) noexcept {
 }
 
 // ********** precondition() **********
-#ifdef __cpp_lib_source_location
 template <config Cfg>
 constexpr void precondition(bool condition,
                             std::string_view msg,
-                            const std::source_location location) noexcept {
-#else
-template <config Cfg>
-constexpr void precondition(bool condition, std::string_view msg) noexcept {
-  details_::fake_source_location location;
-#endif
+                            const source_location location) noexcept {
   if (std::is_constant_evaluated()) {
     if (!condition) {
       details_::precondition_failed_error();
