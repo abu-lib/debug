@@ -13,6 +13,8 @@ jobs:
 
       - name: Configure
         run: |
+          pwd
+          ls -la
           mkdir build 
           cd build 
           cmake -DCMAKE_BUILD_TYPE=Debug -DABU_COVERAGE=ON ..
@@ -20,18 +22,24 @@ jobs:
       - name: Build
         working-directory: ${{github.workspace}}/build
         run: |
+          pwd
+          ls -la
           cd build 
           cmake --build . --config Debug
 
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: |
+          pwd
+          ls -la
           cd build
           ctest -C Debug --output-on-failure
 
       - name: Create code coverage report
         working-directory: ${{github.workspace}}/build
         run: |
+          pwd
+          ls -la
           cd build
           cmake --build . --config Debug --target abu_coverage_report
 
