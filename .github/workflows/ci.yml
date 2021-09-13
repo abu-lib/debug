@@ -4,8 +4,8 @@ on: push
 
 jobs:
   coverage:
-    container: ghcr.io/abu-lib/smoke-test-env:1.0.0
     runs-on: ubuntu-20.04 
+    container: ghcr.io/abu-lib/smoke-test-env:1.0.0
     steps:
       - uses: actions/checkout@v2
         with:
@@ -33,12 +33,15 @@ jobs:
 
   build-and-test-ubuntu:
     needs: coverage
+    runs-on: ubuntu-20.04 
+    container: ghcr.io/abu-lib/smoke-test-env:1.0.0
+
     strategy:
       matrix:
         compiler: [g++-11]
         build_type: [Debug, Release]
 
-    container: ghcr.io/abu-lib/smoke-test-env:1.0.0
+    
     steps:
       - uses: actions/checkout@v2
         with:
