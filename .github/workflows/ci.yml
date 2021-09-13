@@ -3,7 +3,44 @@ name: CI
 on: push
 
 jobs:
+  coverage:
+    runs-on: ubuntu-20.04 
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Set up GCC
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: 11
+          platform: x64
+
+      - name: install gcovr
+        run: apt install gcovr
+
+      - name: Configure
+        env:
+          CXX: g++-11
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -DABU_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config Debug
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C Debug --output-on-failure
+
+      - name: Create code coverage report
+        run: cmake --build ${{github.workspace}}/build --config Debug --target abu_coverage_report
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-report
+          path: ${{github.workspace}}/abu_coverage_report
+
   build-and-test-ubuntu:
+    needs: coverage
     strategy:
       matrix:
         compiler: [g++-11]
@@ -32,6 +69,7 @@ jobs:
         run: ctest -C ${{matrix.build_type}} --output-on-failure
   
   build-and-test-macos:
+    needs: coverage
     strategy:
       matrix:
         compiler: [g++-11]
@@ -55,6 +93,7 @@ jobs:
         run: ctest -C ${{matrix.build_type}} --output-on-failure
 
   build-and-test-windows:
+    needs: coverage
     strategy:
       matrix:
         toolset: [ClangCL, host=x64, host=x86]
