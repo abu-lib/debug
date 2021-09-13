@@ -38,7 +38,8 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: code-coverage-report
-          path: abu_coverage_report
+          path: build/abu_coverage_report
+          if-no-files-found: error
 
   build-and-test-ubuntu:
     needs: coverage
@@ -65,13 +66,11 @@ jobs:
       - name: Build
         working-directory: ${{github.workspace}}/build
         run: |
-          cd build 
           cmake --build . --config ${{matrix.build_type}}
 
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: |
-          cd build
           ctest -C ${{matrix.build_type}} --output-on-failure
 
   build-and-test-macos:
