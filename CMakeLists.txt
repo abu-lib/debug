@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(abu_debug VERSION 0.2.2)
+project(abu_debug VERSION 0.2.3)
 
 include(.abu/build-utils/abu_lib.cmake)
 
