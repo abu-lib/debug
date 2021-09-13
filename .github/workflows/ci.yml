@@ -4,23 +4,14 @@ on: push
 
 jobs:
   coverage:
+    container: ghcr.io/abu-lib/smoke-test-env:1.0.0
     runs-on: ubuntu-20.04 
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      - name: Set up GCC
-        uses: egor-tensin/setup-gcc@v1
-        with:
-          version: 11
-          platform: x64
-
-      - name: install gcovr
-        run: sudo apt-get -y install gcovr
 
       - name: Configure
-        env:
-          CXX: g++-11
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -DABU_COVERAGE=ON
 
       - name: Build
@@ -47,19 +38,12 @@ jobs:
         compiler: [g++-11]
         build_type: [Debug, Release]
 
-    runs-on: ubuntu-20.04 
+    container: ghcr.io/abu-lib/smoke-test-env:1.0.0
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      - name: Set up GCC
-        uses: egor-tensin/setup-gcc@v1
-        with:
-          version: 11
-          platform: x64
       - name: Configure
-        env:
-          CXX: ${{matrix.compiler}}
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
       - name: Build
