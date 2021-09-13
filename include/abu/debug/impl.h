@@ -15,7 +15,10 @@
 #ifndef ABU_DEBUG_IMPL_H_INCLUDED
 #define ABU_DEBUG_IMPL_H_INCLUDED
 
+#if __has_include(<source_location>)
 #include <source_location>
+#endif
+
 #include <string_view>
 #include <type_traits>
 
