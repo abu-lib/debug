@@ -16,7 +16,7 @@ jobs:
           platform: x64
 
       - name: install gcovr
-        run: apt install gcovr
+        run: sudo apt-get -y install gcovr
 
       - name: Configure
         env:
