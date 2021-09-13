@@ -22,32 +22,23 @@ jobs:
       - name: Build
         working-directory: ${{github.workspace}}/build
         run: |
-          pwd
-          ls -la
-          cd build 
           cmake --build . --config Debug
 
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: |
-          pwd
-          ls -la
-          cd build
           ctest -C Debug --output-on-failure
 
       - name: Create code coverage report
         working-directory: ${{github.workspace}}/build
         run: |
-          pwd
-          ls -la
-          cd build
           cmake --build . --config Debug --target abu_coverage_report
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v2
         with:
           name: code-coverage-report
-          path: build/abu_coverage_report
+          path: abu_coverage_report
 
   build-and-test-ubuntu:
     needs: coverage
