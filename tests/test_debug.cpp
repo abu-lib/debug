@@ -17,18 +17,21 @@
 
 using namespace abu;
 
-constexpr debug::config validated = {
-    .check_assumptions = true,
-    .check_preconditions = false,
-};
+void bla(const char*);
 
-constexpr debug::config check_precond = {
-    .check_assumptions = false,
-    .check_preconditions = true,
-};
+constexpr int foo_1(int x) {
+  abu::debug::check(abu::debug::ignore, x < 10);
+  return x;
+}
 
-constexpr void foo(int x) {
-  debug::precondition<check_precond>(x < 10);
+constexpr int foo_2(int x) {
+  abu::debug::check(abu::debug::assume, x < 10);
+  return x;
+}
+
+constexpr int foo_3(int x) {
+  abu::debug::check(abu::debug::verify, x < 10);
+  return x;
 }
 
 template <auto Func, auto... Args>
@@ -42,31 +45,33 @@ concept FailsConstexpr = requires {
   typename std::integral_constant<int, wrapper<Func, Args...>()>;
 };
 
-static_assert(FailsConstexpr<foo, 5>);
-static_assert(!FailsConstexpr<foo, 12>);
+static_assert(FailsConstexpr<foo_1, 5>);
+static_assert(FailsConstexpr<foo_2, 5>);
+static_assert(FailsConstexpr<foo_3, 5>);
+static_assert(!FailsConstexpr<foo_1, 12>);
+static_assert(!FailsConstexpr<foo_2, 12>);
+static_assert(!FailsConstexpr<foo_3, 12>);
 
-TEST(debug, preconditions) {
-  debug::precondition<validated>(true);
-  debug::precondition<validated>(true, "With a message");
-
-  debug::precondition<check_precond>(true);
-  debug::precondition<check_precond>(true, "With a message");
-
-  EXPECT_DEATH(debug::precondition<check_precond>(false), "Precondition");
-  EXPECT_DEATH(debug::precondition<check_precond>(false, "With a message"),
-               "With a message");
-  // Invoking debug::precondition<validated>(false) is UB
+TEST(debug, ignore) {
+  debug::check(abu::debug::ignore, true);
+  debug::check(abu::debug::ignore, true, "With a message");
+  debug::check(abu::debug::ignore, false, "With a message");
 }
 
-TEST(debug, validation) {
-  debug::assume<validated>(true);
-  debug::assume<validated>(true, "With a message");
+TEST(debug, assume) {
+  debug::check(abu::debug::assume, true);
+  debug::check(abu::debug::assume, true, "With a message");
 
-  debug::assume<check_precond>(true);
-  debug::assume<check_precond>(true, "With a message");
+  // This is actually UB...
+  // debug::check(abu::debug::ignore, false, "With a message");
+}
 
-  EXPECT_DEATH(debug::assume<validated>(false), "Assumption");
-  EXPECT_DEATH(debug::precondition<check_precond>(false, "With a message"),
+TEST(debug, verify) {
+  debug::check(abu::debug::verify, true);
+  debug::check(abu::debug::verify, "With a message");
+
+  EXPECT_DEATH(debug::check(abu::debug::verify, false), "Assumption");
+  EXPECT_DEATH(debug::check(abu::debug::verify, false, "With a message"),
                "With a message");
   // Invoking debug::assume<validated>(false) is UB
 }

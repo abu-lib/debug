@@ -52,29 +52,88 @@ struct source_location {
 };
 #endif
 
-// Check that code s behaving as expected.
-template <config Cfg>
-constexpr void assume(
-    bool condition,
-    std::string_view msg = "Assumption Failure",
-    const source_location location = source_location::current()) noexcept;
-
-// Check that external criteria for code to be valid are met.
-template <config Cfg>
-constexpr void precondition(
-    bool condition,
-    std::string_view msg = "Precondition Failure",
-    const source_location location = source_location::current()) noexcept;
-
 // Indicates that code cannot be reached.
 #ifdef _MSC_VER
-[[noreturn]] inline __forceinline void unreachable() noexcept;
+[[noreturn]] inline __forceinline void unreachable() noexcept {
+  __assume(false);
+}
+#elif defined(__GNUC__)
+[[noreturn]] inline void unreachable() noexcept {
+  __builtin_unreachable();
+}
 #else
-[[noreturn]] inline void unreachable() noexcept;
+[[noreturn]] inline void unreachable() noexcept {}
 #endif
 
-}  // namespace abu::debug
+namespace details_ {
 
-#include "abu/debug/impl.h"
+[[noreturn]] void handle_failed_check(std::string_view msg,
+                                      std::uint_least32_t line,
+                                      std::uint_least32_t column,
+                                      const char* file_name,
+                                      const char* function_name) noexcept;
+
+}  // namespace details_
+
+struct ignore_tag_t {};
+struct assume_tag_t {};
+struct verify_tag_t {};
+
+static constexpr ignore_tag_t ignore;
+static constexpr assume_tag_t assume;
+static constexpr verify_tag_t verify;
+
+namespace details_ {
+inline void constexpr_check_failure(){};
+}
+
+constexpr void check(
+    ignore_tag_t,
+    bool condition,
+    std::string_view msg = "",
+    const source_location& location = source_location::current()) noexcept {
+  if (std::is_constant_evaluated()) {
+    if (!condition) {
+      details_::constexpr_check_failure();
+    }
+  }
+}
+
+constexpr void check(
+    assume_tag_t,
+    bool condition,
+    std::string_view msg = "",
+    const source_location& location = source_location::current()) noexcept {
+  if (std::is_constant_evaluated()) {
+    if (!condition) {
+      details_::constexpr_check_failure();
+    }
+  }
+
+  if (!condition) {
+    unreachable();
+  }
+}
+
+constexpr void check(
+    verify_tag_t,
+    bool condition,
+    std::string_view msg = "",
+    const source_location& location = source_location::current()) noexcept {
+  if (std::is_constant_evaluated()) {
+    if (!condition) {
+      details_::constexpr_check_failure();
+    }
+  }
+
+  if (!condition) {
+    details_::handle_failed_check(msg,
+                                  location.line(),
+                                  location.column(),
+                                  location.file_name(),
+                                  location.function_name());
+  }
+}
+}  // namespace abu::debug
 
 #endif

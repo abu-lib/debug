@@ -14,61 +14,76 @@ This contains utilities to ensure program correctness.
 - Checks are always performed in manifestly constexpr contexts.
 
 ## Usage
-There are two types of checks: 
-- **Assumptions**: expectations within the inner workings of the code.
-- **Preconditions**: conditions that must be met for a public interface to be usable.
 
 ```cpp
 namespace abu::debug {
-  struct config {
-    bool check_assumptions;
-    bool check_preconditions;
-  };
+  struct ignore_tag_t {};
+  struct assume_tag_t {};
+  struct verify_tag_t {};
 
-  template<config Cfg>
-  constexpr void assume(bool condition, std::string_view msg={}) noexcept;
+  static constexpr ignore_tag_t ignore;
+  static constexpr assume_tag_t assume;
+  static constexpr verify_tag_t verify;
 
-  template<config Cfg>
-  constexpr void precondition(bool condition, std::string_view msg={}) noexcept;
+  template<typename BehaviorTag>
+  constexpr void check(
+    BehaviorTag,
+    bool condition,
+    std::string_view msg = "",
+    const source_location& location = source_location::current()) noexcept;
 
   [[noreturn]] constexpr void unreachable() noexcept;
 }
 ```
 
-Here's a typical complete real-world setup:
+Note: Checks are always performed in manifestly constexpr contexts, regardless of the chosen behavior.
+
+Unlike `assert()`, there is no one-size-fit-all behavior selection logic for 
+`check()`. Different modules often want to use different logic to determine 
+which checks to perform. 
+
+For example, in a library, we will generally want to perform aggressive internal
+assertions in testing builds, and maintain precondition checks for user debug builds.
+
+As such, `check()` is not really meant to be invoked directly from code, but instead
+contextually wrapped. A typical setup looks like this.
+
 ```cpp
 // my_code/debug.h
-#ifndef MY_CODE_CHECKS_ASSUMPTIONS
-  #ifdef NDEBUG
-    #define MY_CODE_CHECKS_ASSUMPTIONS true
-  #else
-    #define MY_CODE_CHECKS_ASSUMPTIONS false
-  #endif
+
+// MY_CODE_ASSUMPTIONS is set to validate as a compiler flag in the appropriate builds.
+#ifndef MY_CODE_ASSUMPTIONS
+#define MY_CODE_ASSUMPTIONS assume
 #endif
 
-#ifndef MY_CODE_CHECKS_PRECONDITIONS
-  #define MY_CODE_CHECKS_PRECONDITIONS true
+#ifndef MY_CODE_PRECONDITIONS
+  #ifdef NDEBUG
+    #define MY_CODE_PRECONDITIONS assume
+  #else
+    #define MY_CODE_PRECONDITIONS validate
+  #endif
 #endif
 
 #include "abu/debug.h"
 
 namespace my_code {
-constexpr abu::debug::config debug_cfg = {
-  .check_assumptions = MY_CODE_CHECKS_ASSUMPTIONS;
-  .check_preconditions = MY_CODE_CHECKS_PRECONDITIONS;
-};
 
-inline constexpr void assume(bool condition, 
-                             std::string_view msg={}) noexcept {
-  return abu::debug::assume<debug_cfg>(condition, msg);
+inline constexpr void assume(
+    bool condition, 
+    std::string_view msg={}
+    abu::debug::source_location loc = abu::debug::source_location::current()) noexcept {
+  return abu::debug::check(abu::debug::MY_CODE_ASSUMPTIONS, condition, msg, loc);
 } 
 
-inline constexpr void precondition(bool condition, 
-                                   std::string_view msg={}) noexcept {
-  return abu::debug::precondition<debug_cfg>(condition, msg);
+inline constexpr void precondition(
+    bool condition, 
+    std::string_view msg={},
+    abu::debug::source_location loc = abu::debug::source_location::current()) noexcept {
+  return abu::debug::check(abu::debug::MY_CODE_PRECONDITIONS, condition, msg, loc);
 } 
 }
 ```
+
 ```cpp
 // my_code/source.cpp
 #include <string>
@@ -78,24 +93,10 @@ inline constexpr void precondition(bool condition,
 
 namespace my_code {
 void int_to_float(std::variant<std::string, int, float>& v) {
-    precondition(v.index() == 1);
+    precondition(v.index() == 1, "v must be an int here");
 
     v = 12.5f;
     assume(v.index() == 2);
 }
 }
 ```
-
-## FAQ
-
-> How do I write tests for checks?
-
-For runtime tests, a death test like GoogleTest's `EXPECT_DEATH()` is the way to go.
-
-## Kludges
-
-`abu::debug` has the following kludges:
-
-- `<source_location>` Is not supported on clang as of version 12. A workaround is in place
-- Optimal behavior for `unreachable()` is compiler-specific.
-  - MSVC needs a `__force_inline` in order to behave well.
