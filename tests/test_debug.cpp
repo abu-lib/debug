@@ -17,8 +17,6 @@
 
 using namespace abu;
 
-void bla(const char*);
-
 constexpr int foo_1(int x) {
   abu::debug::check(abu::debug::ignore, x < 10);
   return x;
@@ -70,7 +68,7 @@ TEST(debug, verify) {
   debug::check(abu::debug::verify, true);
   debug::check(abu::debug::verify, "With a message");
 
-  EXPECT_DEATH(debug::check(abu::debug::verify, false), "Assumption");
+  EXPECT_DEATH(debug::check(abu::debug::verify, false), "");
   EXPECT_DEATH(debug::check(abu::debug::verify, false, "With a message"),
                "With a message");
   // Invoking debug::assume<validated>(false) is UB
