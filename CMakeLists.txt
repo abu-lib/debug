@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 project(abu_debug VERSION 0.3.0)
 
+##### Begin Boilerplate #####
 set(ABU_BUILD_ALL_TESTS OFF CACHE BOOL "")
-
+SET(ABU_COVERAGE OFF CACHE BOOL "Creates coverage report")
 include(FetchContent)
 
 get_directory_property(hasParent PARENT_DIRECTORY)
@@ -11,6 +12,7 @@ if(hasParent)
 else()
   set(ABU_DEBUG_BUILD_TESTS ON CACHE BOOL "")
 endif()
+##### End Boilerplate #####
 
 # abu::debug
 add_library(abu_debug
