@@ -3,6 +3,8 @@ project(abu_debug VERSION 0.3.0)
 
 set(ABU_BUILD_ALL_TESTS OFF CACHE BOOL "")
 
+include(FetchContent)
+
 get_directory_property(hasParent PARENT_DIRECTORY)
 if(hasParent)
   set(ABU_DEBUG_BUILD_TESTS ${ABU_BUILD_ALL_TESTS} CACHE BOOL "")
