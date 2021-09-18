@@ -23,12 +23,6 @@
 
 namespace abu::debug {
 
-// Determines which checks are going to be performed.
-struct config {
-  bool check_assumptions = false;
-  bool check_preconditions = false;
-};
-
 #ifdef __cpp_lib_source_location
 using source_location = std::source_location;
 #else

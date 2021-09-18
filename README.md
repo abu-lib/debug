@@ -60,7 +60,7 @@ contextually wrapped. A typical setup looks like this.
   #ifdef NDEBUG
     #define MY_CODE_PRECONDITIONS assume
   #else
-    #define MY_CODE_PRECONDITIONS validate
+    #define MY_CODE_PRECONDITIONS verify
   #endif
 #endif
 
