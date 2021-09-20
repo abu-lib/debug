@@ -15,8 +15,8 @@ endif()
 
 get_directory_property(hasParent PARENT_DIRECTORY)
 
-set(${PROJECT_NAME}_build_tests ${PROJECT_NAME}_master_project CACHE BOOL "")
-set(${PROJECT_NAME}_install ${PROJECT_NAME}_master_project CACHE BOOL "")
+set(${PROJECT_NAME}_build_tests ${${PROJECT_NAME}_master_project} CACHE BOOL "")
+set(${PROJECT_NAME}_install ${${PROJECT_NAME}_master_project} CACHE BOOL "")
 set(${PROJECT_NAME}_install_dependencies ON CACHE BOOL "(Only if ${PROJECT_NAME}_install): Also install other required abu libraries ")
 set(${PROJECT_NAME}_coverage OFF CACHE BOOL "")
 set(${PROJECT_NAME}_build_benchmarks OFF CACHE BOOL "")
